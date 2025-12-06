@@ -5,6 +5,18 @@ import datetime
 import geonamescache
 import pandas as pd
 from fpdf import FPDF
+import base64
+import os
+
+# --- FUNZIONI DI UTILITÀ ---
+def get_base64_of_bin_file(bin_file):
+    """Legge un file binario e restituisce la stringa base64."""
+    try:
+        with open(bin_file, 'rb') as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    except FileNotFoundError:
+        return None
 
 # --- CONFIGURAZIONE CHIAVE API ---
 api_key = "AIzaSyC8EK2UwcM-gVqfY0iJ3qANiYnfzVHRy9Y"
@@ -12,59 +24,141 @@ api_key = "AIzaSyC8EK2UwcM-gVqfY0iJ3qANiYnfzVHRy9Y"
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Cultural Travel Planner", page_icon="🏛️", layout="wide")
 
-# --- STILE CSS PERSONALIZZATO ---
-st.markdown("""
+# --- CARICAMENTO ASSET (FONT E SFONDO) ---
+
+# 1. Caricamento Immagine Sfondo
+img_base64 = get_base64_of_bin_file("david.jpg")
+if img_base64:
+    bg_style = f"""
+    .stApp {{
+        background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(20, 20, 20, 0.85)), url("data:image/jpeg;base64,{img_base64}");
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        background-position: center 15%;
+        background-color: #1a1a1a;
+    }}
+    """
+else:
+    bg_style = ""
+    st.warning("⚠️ Immagine 'david.jpg' non trovata.")
+
+# 2. Caricamento Font Personalizzato
+font_filename = "Belgiano Serif 2.ttf"
+font_base64 = get_base64_of_bin_file(font_filename)
+
+if font_base64:
+    font_style = f"""
+    @font-face {{
+        font-family: 'Belgiano';
+        src: url('data:font/ttf;base64,{font_base64}') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }}
+    
+    /* Applica il font SOLO agli elementi di testo specifici per evitare sovrapposizioni */
+    
+    /* Titoli */
+    h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {{
+        font-family: 'Belgiano', serif !important;
+    }}
+    
+    /* Testo normale */
+    .stMarkdown p, .stCaption, p {{
+        font-family: 'Belgiano', serif !important;
+    }}
+    
+    /* Etichette degli Input e Testo Input */
+    .stSelectbox label, .stTextInput label, .stDateInput label, .stTimeInput label, .stNumberInput label {{
+        font-family: 'Belgiano', serif !important;
+    }}
+    /* Testo dentro gli input */
+    .stTextInput input, .stSelectbox div[data-baseweb="select"] {{
+        font-family: 'Belgiano', serif !important;
+    }}
+
+    /* Pulsanti */
+    .stButton button {{
+        font-family: 'Belgiano', serif !important;
+        line-height: 1.5 !important; 
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+    }}
+    """
+else:
+    font_style = ""
+    st.warning(f"⚠️ Font '{font_filename}' non trovato. Assicurati che il file sia nella cartella.")
+
+# --- INIEZIONE CSS COMPLETO ---
+st.markdown(f"""
 <style>
+    {font_style}
+    {bg_style}
+
+    /* TEMA SCURO GLOBALE */
+    
+    /* Testo Principale Bianco */
+    h1, h2, h3, .stMarkdown p, .stSelectbox label, .stTextInput label, .stDateInput label, .stTimeInput label, .stCaption {{
+        color: #ffffff !important;
+        text-shadow: 1px 1px 2px rgba(0,0,0, 0.8);
+    }}
+
     /* Stile Card Attività */
-    .activity-card {
-        background-color: white;
+    .activity-card {{
+        background-color: rgba(40, 40, 40, 0.95);
         padding: 15px;
         border-radius: 10px;
-        border-left: 5px solid #8B4513; /* Bronzo Storia */
-        box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        border-left: 5px solid #c27ba0;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         margin-bottom: 10px;
         transition: transform 0.2s;
-    }
-    .activity-card:hover {
+        color: #e0e0e0;
+    }}
+    .activity-card:hover {{
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.12);
-    }
-    .card-title {
-        color: #2c3e50;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        border-left-color: #d5a6bd;
+    }}
+    .card-title {{
+        color: #ffffff;
         font-size: 1.1em;
         font-weight: bold;
         margin-bottom: 4px;
-    }
-    .card-desc {
-        color: #555;
+        font-family: 'Belgiano', serif !important;
+    }}
+    .card-desc {{
+        color: #cccccc;
         font-size: 0.9em;
         line-height: 1.4;
         margin-bottom: 8px;
-    }
-    .card-meta {
+        font-family: 'Belgiano', serif !important;
+    }}
+    .card-meta {{
         font-size: 0.8em;
-        color: #888;
+        color: #999;
         display: flex;
         justify-content: space-between;
         align-items: center;
-    }
-    .maps-link {
-        color: #4285F4;
+        font-family: 'Belgiano', serif !important;
+    }}
+    /* Link Mappa */
+    .maps-link {{
+        color: #8ab4f8;
         text-decoration: none;
         font-weight: bold;
-        border: 1px solid #4285F4;
+        border: 1px solid #8ab4f8;
         padding: 2px 6px;
         border-radius: 4px;
-    }
-    .maps-link:hover { 
-        background-color: #4285F4; 
-        color: white;
-    }
+    }}
+    .maps-link:hover {{ 
+        background-color: #8ab4f8; 
+        color: #202124;
+    }}
     
     /* Time Badge */
-    .time-badge {
-        background-color: #8B4513;
-        color: white;
+    .time-badge {{
+        background-color: #c27ba0;
+        color: #202124;
         padding: 4px 8px;
         border-radius: 15px;
         font-weight: bold;
@@ -72,7 +166,34 @@ st.markdown("""
         text-align: center;
         width: fit-content;
         margin-bottom: 4px;
-    }
+        font-family: 'Belgiano', serif !important;
+    }}
+    
+    /* Stile Input/Selectbox (Scuri) */
+    .stSelectbox > div > div {{
+        background-color: rgba(50, 50, 50, 0.8);
+        color: white;
+        border: 1px solid #555;
+    }}
+     .stTextInput > div > div > input {{
+        background-color: rgba(50, 50, 50, 0.8);
+        color: white;
+        border: 1px solid #555;
+    }}
+     /* Dropdown */
+    .stSelectbox ul {{
+        background-color: #333 !important;
+        color: white !important;
+    }}
+    .stSelectbox li:hover {{
+       background-color: #555 !important;
+    }}
+    /* Calendari */
+    .stDateInput > div[data-baseweb="popover"] > div {{
+         background-color: #333 !important;
+         color: white !important;
+    }}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -225,14 +346,15 @@ def get_itinerary(destination, start_date, arrival_time, end_date, departure_tim
             return None
 
 # --- UI PRINCIPALE ---
-st.title("🏛️ AI Cultural Travel Planner")
+# MODIFICA: Icona spostata alla fine
+st.title("AI Cultural Travel Planner 🏛️")
 st.markdown("Itinerari storici ottimizzati per **distanze** e **affollamento**.")
 st.write("") 
 
 # --- LAYOUT A RIGHE ---
 h_col1, h_col2 = st.columns([2, 2])
-with h_col1: st.subheader("📍 Destinazione")
-with h_col2: st.subheader("✈️ Date e Orari")
+with h_col1: st.subheader("Destinazione") # Rimosso 📍
+with h_col2: st.subheader("Date e Orari") # Rimosso ✈️
 
 # RIGA 1: Nazione | Data Arrivo | Ora Arrivo
 r1_col1, r1_col2, r1_col3 = st.columns([2, 1, 1]) 
@@ -261,7 +383,7 @@ st.markdown("---")
 # --- PULSANTE CENTRATO ---
 c_left, c_center, c_right = st.columns([1, 2, 1])
 with c_center:
-    generate_click = st.button("✨ Genera Itinerario", type="primary", use_container_width=True)
+    generate_click = st.button("✨ Genera Itinerario", type="primary", width="stretch")
 
 if generate_click:
     if not city_input:
@@ -285,7 +407,7 @@ if generate_click:
                     data=pdf_bytes,
                     file_name=f"Itinerario_{city_input}.pdf",
                     mime="application/pdf",
-                    use_container_width=True
+                    width="stretch"
                 )
 
             # Loop Giorni
@@ -326,12 +448,9 @@ if generate_click:
                         
                         if map_points:
                             df_map = pd.DataFrame(map_points)
-                            
-                            # --- CALCOLO ALTEZZA DINAMICA (Calibrato) ---
-                            # 100px per card
+                            # Calcolo altezza dinamica (100px per card)
                             dynamic_height = max(350, num_activities * 100)
-                            
-                            st.map(df_map, size=20, color='#8B4513', use_container_width=True, height=dynamic_height)
+                            st.map(df_map, size=20, color='#8B4513', width="stretch", height=dynamic_height)
                         else:
                             st.info("Nessuna coordinata disponibile.")
 
