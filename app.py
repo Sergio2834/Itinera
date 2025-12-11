@@ -286,7 +286,7 @@ def get_itinerary(destination, start_date, arrival_time, end_date, departure_tim
     
     # Configurazione generazione
     generation_config = {"temperature": 0.2, "top_p": 1, "top_k": 32, "max_output_tokens": 8192}
-    model = genai.GenerativeModel(model_name="gemini-2.0-flash", generation_config=generation_config)
+    model = genai.GenerativeModel(model_name="gemini-2.5-flash", generation_config=generation_config)
 
     str_arr = arrival_time.strftime("%H:%M")
     str_dep = departure_time.strftime("%H:%M")
@@ -356,7 +356,7 @@ h_col1, h_col2 = st.columns([2, 2])
 with h_col1: st.subheader("Destinazione") # Rimosso 📍
 with h_col2: st.subheader("Date e Orari") # Rimosso ✈️
 
-# RIGA 1: Nazione | Data Arrivo | Ora Arrivo
+# --- RIGA 1: Nazione | Data Arrivo | Ora Arrivo ---
 r1_col1, r1_col2, r1_col3 = st.columns([2, 1, 1]) 
 with r1_col1:
     default_ix = all_nations.index("Italy") if "Italy" in all_nations else 0
@@ -365,25 +365,90 @@ with r1_col1:
     available_cities = db_cities.get(nation_code, [])
     city_options = ["Scrivi manualmente..."] + available_cities
     
-with r1_col2: start_date = st.date_input("Giorno di Arrivo", datetime.date.today())
-with r1_col3: arrival_time = st.time_input("Orario di Atterraggio", datetime.time(10, 00))
+with r1_col2: 
+    start_date = st.date_input("Giorno di Arrivo", datetime.date.today(), min_value=datetime.date.today())
 
-# RIGA 2: Città | Data Partenza | Ora Partenza
+with r1_col3: 
+    arrival_time = st.time_input("Orario di Atterraggio", datetime.time(10, 00))
+
+# --- RIGA 2: Città | Data Partenza | Ora Partenza ---
+# --- FUNZIONE DI SUPPORTO PER GENERARE GLI ORARI ---
+def generate_time_slots(step_minutes=15):
+    """Genera una lista di orari a intervalli di X minuti."""
+    slots = []
+    h, m = 0, 0
+    while h < 24:
+        slots.append(datetime.time(h, m))
+        m += step_minutes
+        if m >= 60:
+            h += 1
+            m = 0
+    return slots
+
+# Otteniamo tutti gli slot possibili (es. ogni 15 minuti)
+all_time_slots = generate_time_slots(15)
+
+# --- RIGA 2 MODIFICATA ---
 r2_col1, r2_col2, r2_col3 = st.columns([2, 1, 1])
+
 with r2_col1:
     selected_city_opt = st.selectbox(f"Città in {selected_nation}", city_options, index=1 if len(city_options) > 1 else 0)
     city_input = st.text_input("Inserisci città") if selected_city_opt == "Scrivi manualmente..." else selected_city_opt
     final_destination = f"{city_input}, {selected_nation}"
 
-with r2_col2: end_date = st.date_input("Giorno di Partenza", datetime.date.today() + datetime.timedelta(days=3))
-with r2_col3: departure_time = st.time_input("Orario di Decollo", datetime.time(18, 00))
+with r2_col2: 
+    default_end_val = start_date + datetime.timedelta(days=3)
+    end_date = st.date_input("Giorno di Partenza", value=default_end_val, min_value=start_date)
 
-st.markdown("---")
+with r2_col3: 
+    # LOGICA "SMART": FILTRO DEGLI ORARI
+    if end_date == start_date:
+        # Se si torna in giornata, filtra gli orari mostrando solo quelli DOPO l'arrivo
+        # Aggiungiamo un piccolo buffer (es. non puoi ripartire nello stesso minuto dell'arrivo)
+        valid_times = [t for t in all_time_slots if t > arrival_time]
+        
+        if not valid_times:
+            # Caso limite: Arrivo alle 23:45, non ci sono slot per il ritorno oggi
+            st.warning("Nessun orario disponibile oggi.")
+            departure_time = arrival_time # Fallback per evitare crash
+        else:
+            # Imposta un default sensato (es. 4 ore dopo l'arrivo, o l'ultimo disponibile)
+            default_idx = min(16, len(valid_times)-1) # Cerca di selezionare un orario 4 ore dopo (16 slot da 15min)
+            departure_time = st.selectbox(
+                "Orario di Decollo", 
+                options=valid_times, 
+                index=default_idx,
+                format_func=lambda t: t.strftime("%H:%M") # Mostra solo HH:MM
+            )
+    else:
+        # Se il giorno è diverso, mostra TUTTI gli orari
+        # Default alle 18:00 (cerchiamo l'indice corrispondente o usiamo un valore fisso)
+        default_time = datetime.time(18, 0)
+        try:
+            def_index = all_time_slots.index(default_time)
+        except ValueError:
+            def_index = len(all_time_slots) - 1 # Se non trova le 18:00, prende l'ultimo
+            
+        departure_time = st.selectbox(
+            "Orario di Decollo", 
+            options=all_time_slots, 
+            index=def_index,
+            format_func=lambda t: t.strftime("%H:%M")
+        )
+    # --- VALIDAZIONE TEMPORALE ---
+    # Uniamo data e ora per fare un confronto matematico preciso
+    dt_arrival = datetime.datetime.combine(start_date, arrival_time)
+    dt_departure = datetime.datetime.combine(end_date, departure_time)
+
+    # Calcoliamo la differenza
+    time_difference = dt_departure - dt_arrival
+    if time_difference.total_seconds() < 7200: # Opzionale: Avviso se il viaggio dura meno di 2 ore
+        st.info("ℹ️ Nota: La permanenza è molto breve (meno di 2 ore).")
 
 # --- PULSANTE CENTRATO ---
 c_left, c_center, c_right = st.columns([1, 2, 1])
 with c_center:
-    generate_click = st.button("✨ Genera Itinerario", type="primary", width="stretch")
+    generate_click = st.button("Genera Itinerario", type="primary", width="stretch")
 
 if generate_click:
     if not city_input:
