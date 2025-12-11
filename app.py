@@ -8,6 +8,12 @@ from fpdf import FPDF
 import base64
 import os
 
+# --- CONFIGURAZIONE CHIAVE API ---
+api_key = "AIzaSyC8EK2UwcM-gVqfY0iJ3qANiYnfzVHRy9Y"  # Inserisci la tua chiave reale qui
+
+# --- CONFIGURAZIONE PAGINA ---
+st.set_page_config(page_title="Cultural Travel Planner", page_icon="🏛️", layout="wide")
+
 # --- FUNZIONI DI UTILITÀ ---
 def get_base64_of_bin_file(bin_file):
     """Legge un file binario e restituisce la stringa base64."""
@@ -18,120 +24,65 @@ def get_base64_of_bin_file(bin_file):
     except FileNotFoundError:
         return None
 
-# --- CONFIGURAZIONE CHIAVE API ---
-api_key = "AIzaSyC8EK2UwcM-gVqfY0iJ3qANiYnfzVHRy9Y"
-
-# --- CONFIGURAZIONE PAGINA ---
-st.set_page_config(page_title="Cultural Travel Planner", page_icon="🏛️", layout="wide")
-
-# --- CARICAMENTO ASSET (FONT E SFONDO) ---
-
-# 1. Caricamento Immagine Sfondo
+# --- CARICAMENTO SFONDO E STILE DARK MODE ---
 img_base64 = get_base64_of_bin_file("david.jpg")
+
+# CSS Dinamico per sfondo
 if img_base64:
-    bg_style = f"""
+    bg_image_css = f"""
     .stApp {{
-        background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(20, 20, 20, 0.85)), url("data:image/jpeg;base64,{img_base64}");
+        background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(20, 20, 20, 0.9)), url("data:image/jpeg;base64,{img_base64}");
         background-size: cover;
-        background-repeat: no-repeat;
         background-attachment: fixed;
-        background-position: center 15%;
-        background-color: #1a1a1a;
+        background-position: center;
     }}
     """
 else:
-    bg_style = ""
-    st.warning("⚠️ Immagine 'david.jpg' non trovata.")
-
-# 2. Caricamento Font Personalizzato
-font_filename = "Belgiano Serif 2.ttf"
-font_base64 = get_base64_of_bin_file(font_filename)
-
-if font_base64:
-    font_style = f"""
-    @font-face {{
-        font-family: 'Belgiano';
-        src: url('data:font/ttf;base64,{font_base64}') format('truetype');
-        font-weight: normal;
-        font-style: normal;
-    }}
-    
-    /* Applica il font SOLO agli elementi di testo specifici per evitare sovrapposizioni */
-    
-    /* Titoli */
-    h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {{
-        font-family: 'Belgiano', serif !important;
-    }}
-    
-    /* Testo normale */
-    .stMarkdown p, .stCaption, p {{
-        font-family: 'Belgiano', serif !important;
-    }}
-    
-    /* Etichette degli Input e Testo Input */
-    .stSelectbox label, .stTextInput label, .stDateInput label, .stTimeInput label, .stNumberInput label {{
-        font-family: 'Belgiano', serif !important;
-    }}
-    /* Testo dentro gli input */
-    .stTextInput input, .stSelectbox div[data-baseweb="select"] {{
-        font-family: 'Belgiano', serif !important;
-    }}
-
-    /* Pulsanti */
-    .stButton button {{
-        font-family: 'Belgiano', serif !important;
-        line-height: 1.5 !important; 
-        padding-top: 0.5rem !important;
-        padding-bottom: 0.5rem !important;
-    }}
+    # Fallback se non c'è l'immagine: sfondo grigio scuro
+    bg_image_css = """
+    .stApp {
+        background-color: #121212;
+    }
     """
-else:
-    font_style = ""
-    st.warning(f"⚠️ Font '{font_filename}' non trovato. Assicurati che il file sia nella cartella.")
 
-# --- INIEZIONE CSS COMPLETO ---
+# CSS Globale per adattare tutto al tema scuro
 st.markdown(f"""
 <style>
-    {font_style}
-    {bg_style}
+    /* 1. Applica sfondo */
+    {bg_image_css}
 
-    /* TEMA SCURO GLOBALE */
-    
-    /* Testo Principale Bianco */
-    h1, h2, h3, .stMarkdown p, .stSelectbox label, .stTextInput label, .stDateInput label, .stTimeInput label, .stCaption {{
-        color: #ffffff !important;
-        text-shadow: 1px 1px 2px rgba(0,0,0, 0.8);
+    /* 2. Forza testo bianco globale per titoli e label */
+    h1, h2, h3, h4, h5, h6, p, label, .stMarkdown, div {{
+        color: #E0E0E0 !important;
     }}
 
-    /* Stile Card Attività */
+    /* 3. Stile Card Attività (Versione Dark) */
     .activity-card {{
-        background-color: rgba(40, 40, 40, 0.95);
+        background-color: #262730; /* Grigio scuro Streamlit */
         padding: 15px;
         border-radius: 10px;
-        border-left: 5px solid #c27ba0;
+        border-left: 5px solid #FFD700; /* Oro per contrasto su scuro */
         box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         margin-bottom: 10px;
         transition: transform 0.2s;
-        color: #e0e0e0;
+        color: white; /* Testo interno card */
     }}
     .activity-card:hover {{
         transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(0,0,0,0.4);
-        border-left-color: #d5a6bd;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.5);
+        background-color: #2e2f38;
     }}
     .card-title {{
-        color: #ffffff;
-        font-size: 1.1em;
+        color: #FFD700; /* Oro */
+        font-size: 1.2em;
         font-weight: bold;
         margin-bottom: 4px;
-        font-family: 'Belgiano', serif !important;
     }}
     .card-desc {{
-        color: #cccccc;
-        font-size: 0.9em;
+        color: #d1d1d1; /* Grigio chiaro */
+        font-size: 0.95em;
         line-height: 1.4;
         margin-bottom: 8px;
-        font-family: 'Belgiano', serif !important;
     }}
     .card-meta {{
         font-size: 0.8em;
@@ -139,59 +90,41 @@ st.markdown(f"""
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-family: 'Belgiano', serif !important;
+        border-top: 1px solid #444;
+        padding-top: 5px;
+        margin-top: 5px;
     }}
-    /* Link Mappa */
     .maps-link {{
-        color: #8ab4f8;
+        color: #4285F4;
         text-decoration: none;
         font-weight: bold;
-        border: 1px solid #8ab4f8;
-        padding: 2px 6px;
-        border-radius: 4px;
     }}
-    .maps-link:hover {{ 
-        background-color: #8ab4f8; 
-        color: #202124;
-    }}
+    .maps-link:hover {{ text-decoration: underline; color: #7aa9ff; }}
     
     /* Time Badge */
     .time-badge {{
-        background-color: #c27ba0;
-        color: #202124;
+        background-color: #444;
+        color: #FFF;
         padding: 4px 8px;
         border-radius: 15px;
         font-weight: bold;
         font-size: 0.8em;
-        text-align: center;
-        width: fit-content;
-        margin-bottom: 4px;
-        font-family: 'Belgiano', serif !important;
+        border: 1px solid #666;
     }}
-    
-    /* Stile Input/Selectbox (Scuri) */
-    .stSelectbox > div > div {{
-        background-color: rgba(50, 50, 50, 0.8);
+
+    /* 4. Personalizzazione Widget Input per renderli leggibili su scuro */
+    .stTextInput > div > div > input {{
+        background-color: rgba(255, 255, 255, 0.1); 
         color: white;
-        border: 1px solid #555;
+        border-color: #555;
     }}
-     .stTextInput > div > div > input {{
-        background-color: rgba(50, 50, 50, 0.8);
+    .stSelectbox > div > div > div {{
+        background-color: rgba(255, 255, 255, 0.1);
         color: white;
-        border: 1px solid #555;
     }}
-     /* Dropdown */
-    .stSelectbox ul {{
-        background-color: #333 !important;
+    /* Colore testo dentro i box input */
+    .stDateInput input, .stTimeInput input {{
         color: white !important;
-    }}
-    .stSelectbox li:hover {{
-       background-color: #555 !important;
-    }}
-    /* Calendari */
-    .stDateInput > div[data-baseweb="popover"] > div {{
-         background-color: #333 !important;
-         color: white !important;
     }}
 
 </style>
@@ -219,58 +152,44 @@ all_nations, map_name_code, db_cities = load_location_data()
 
 # --- FUNZIONE PDF EXPORT ---
 def create_pdf(trip_data, destination):
-    
-    def clean_text(text):
-        if not text: return ""
-        return text.encode('latin-1', 'replace').decode('latin-1')
-
     class PDF(FPDF):
         def header(self):
             self.set_font('Arial', 'B', 15)
-            self.cell(0, 10, f'Itinerario Culturale: {clean_text(destination)}', 0, 1, 'C')
+            self.cell(0, 10, f'Itinerario Culturale: {destination}', 0, 1, 'C')
             self.ln(10)
 
     pdf = PDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
 
-    title = clean_text(trip_data.get('trip_title', 'Titolo Viaggio'))
-    summary = clean_text(trip_data.get('summary', ''))
-
+    # Titolo e Riassunto
     pdf.set_font("Arial", 'B', 12)
-    pdf.multi_cell(0, 10, f"Titolo: {title}")
+    # Gestione encoding base per FPDF (latin-1)
+    safe_title = trip_data.get('trip_title', '').encode('latin-1', 'replace').decode('latin-1')
+    safe_summary = trip_data.get('summary', '').encode('latin-1', 'replace').decode('latin-1')
+    
+    pdf.multi_cell(0, 10, f"Titolo: {safe_title}")
     pdf.set_font("Arial", '', 11)
-    pdf.multi_cell(0, 10, f"Riassunto: {summary}")
+    pdf.multi_cell(0, 10, f"Riassunto: {safe_summary}")
     pdf.ln(5)
 
     for day in trip_data.get("days", []):
-        date_str = str(day.get('date', 'Data'))
         pdf.set_font("Arial", 'B', 14)
-        pdf.set_fill_color(240, 240, 240)
-        pdf.cell(0, 10, f"Giorno {day['day_number']} - {date_str}", 0, 1, fill=True)
+        pdf.cell(0, 10, f"Giorno {day['day_number']} - {day['date']}", 0, 1)
         pdf.ln(2)
         
+        pdf.set_font("Arial", '', 11)
         for act in day.get("activities", []):
-            time_str = clean_text(f"{act.get('time','')} ({act.get('duration','')})")
-            place_name = clean_text(act.get('place_name',''))
-            
+            time_str = f"{act['time']} ({act['duration']})"
             pdf.set_font("Arial", 'B', 11)
-            pdf.cell(45, 10, time_str)
-            pdf.cell(0, 10, place_name, 0, 1)
+            pdf.cell(40, 10, time_str)
+            
+            safe_place = act['place_name'].encode('latin-1', 'replace').decode('latin-1')
+            pdf.cell(0, 10, safe_place, 0, 1)
             
             pdf.set_font("Arial", '', 10)
-            desc = clean_text(act.get('description', ''))
+            desc = act['description'].encode('latin-1', 'replace').decode('latin-1')
             pdf.multi_cell(0, 6, f" - {desc}")
-
-            q_place = place_name.replace(" ", "+")
-            q_dest = destination.replace(" ", "+")
-            maps_link = f"https://www.google.com/maps/search/?api=1&query={q_place}+{q_dest}"
-            
-            pdf.set_text_color(0, 0, 255)
-            pdf.set_font("Arial", 'U', 9)
-            pdf.cell(0, 8, "    --> Vedi su Google Maps (Clicca qui)", link=maps_link, ln=1)
-            
-            pdf.set_text_color(0, 0, 0)
             pdf.ln(2)
         pdf.ln(5)
         
@@ -284,39 +203,31 @@ def get_itinerary(destination, start_date, arrival_time, end_date, departure_tim
 
     genai.configure(api_key=api_key)
     
-    # Configurazione generazione
     generation_config = {"temperature": 0.2, "top_p": 1, "top_k": 32, "max_output_tokens": 8192}
-    model = genai.GenerativeModel(model_name="gemini-2.5-flash", generation_config=generation_config)
+    model = genai.GenerativeModel(model_name="gemini-1.5-flash", generation_config=generation_config) # Aggiornato a 1.5 flash che è stabile
 
     str_arr = arrival_time.strftime("%H:%M")
     str_dep = departure_time.strftime("%H:%M")
 
-    # --- PROMPT ---
     prompt = f"""
-    Agisci come una guida turistica esperta e logistica. Crea un itinerario culturale per {destination}.
-    
-    IMPORTANTE: LINGUA DI OUTPUT
-    Devi scrivere TUTTO il contenuto ESCLUSIVAMENTE IN ITALIANO.
-    Anche se la città è estera (es. Londra, Tokyo, New York), traduci le descrizioni, i consigli e i riassunti in italiano.
-    Mantieni i nomi propri dei luoghi (es. "British Museum") in lingua originale se necessario, ma descrivili in ITALIANO.
+    Agisci come una guida turistica esperta. Crea un itinerario culturale per {destination}.
     
     DATI INPUT:
     - ARRIVO: {start_date} ore {str_arr}.
     - RITORNO: {end_date}, partenza ore {str_dep}.
     
     OBIETTIVO:
-    Itinerario focalizzato su **Musei, Storia, Arte**.
+    Itinerario su Musei, Storia, Arte.
     
-    REGOLE LOGISTICHE:
-    1. **Arrivo/Partenza:** Calcola i tempi di transito aeroporto.
-    2. **Coordinate:** Fornisci sempre lat/lon.
-    3. **Ottimizzazione:** Raggruppa le attività per vicinanza geografica (quartieri).
-    4. **Smart Skip:** Evita luoghi chiusi o troppo affollati.
-    
+    REGOLE:
+    1. Attività vicine tra loro nella stessa giornata.
+    2. Coordinate lat/lon precise.
+    3. Evita luoghi chiusi all'orario indicato.
+
     FORMATO OUTPUT (SOLO JSON):
     {{
-      "trip_title": "Titolo evocativo in Italiano",
-      "summary": "Riassunto del viaggio in Italiano",
+      "trip_title": "Titolo",
+      "summary": "Breve riassunto",
       "days": [
         {{
           "day_number": 1,
@@ -325,132 +236,58 @@ def get_itinerary(destination, start_date, arrival_time, end_date, departure_tim
             {{
               "time": "HH:MM",
               "place_name": "Nome Luogo",
-              "description": "Descrizione dettagliata in ITALIANO",
+              "description": "Descrizione sintetica",
               "duration": "2h",
-              "coordinates": {{ "lat": 0.0, "lon": 0.0 }},
-              "tips": "Consiglio pratico in ITALIANO"
+              "coordinates": {{ "lat": 41.9028, "lon": 12.4964 }},
+              "tips": "Consiglio utile"
             }}
           ]
         }}
       ]
     }}
     """
-    
-    with st.spinner("Sto generando l'itinerario..."):
+
+    with st.spinner(f'Analisi mappe e storia per {destination}...'):
         try:
             response = model.generate_content(prompt)
             text_response = response.text.replace("```json", "").replace("```", "").strip()
             return json.loads(text_response)
         except Exception as e:
-            st.error(f"Errore generazione: {e}")
+            st.error(f"Errore nella generazione: {e}")
             return None
 
 # --- UI PRINCIPALE ---
-# MODIFICA: Icona spostata alla fine
-st.title("AI Cultural Travel Planner 🏛️")
-st.markdown("Itinerari storici ottimizzati per **distanze** e **affollamento**.")
-st.write("") 
+st.title("🏛️ AI Cultural Travel Planner")
+st.markdown("Itinerari storici generati dall'AI, ottimizzati per la logistica.")
 
-# --- LAYOUT A RIGHE ---
-h_col1, h_col2 = st.columns([2, 2])
-with h_col1: st.subheader("Destinazione") # Rimosso 📍
-with h_col2: st.subheader("Date e Orari") # Rimosso ✈️
+col1, col2 = st.columns(2)
 
-# --- RIGA 1: Nazione | Data Arrivo | Ora Arrivo ---
-r1_col1, r1_col2, r1_col3 = st.columns([2, 1, 1]) 
-with r1_col1:
+with col1:
+    st.subheader("📍 Destinazione")
     default_ix = all_nations.index("Italy") if "Italy" in all_nations else 0
     selected_nation = st.selectbox("Seleziona Nazione", all_nations, index=default_ix)
     nation_code = map_name_code.get(selected_nation)
     available_cities = db_cities.get(nation_code, [])
-    city_options = ["Scrivi manualmente..."] + available_cities
     
-with r1_col2: 
-    start_date = st.date_input("Giorno di Arrivo", datetime.date.today(), min_value=datetime.date.today())
-
-with r1_col3: 
-    arrival_time = st.time_input("Orario di Atterraggio", datetime.time(10, 00))
-
-# --- RIGA 2: Città | Data Partenza | Ora Partenza ---
-# --- FUNZIONE DI SUPPORTO PER GENERARE GLI ORARI ---
-def generate_time_slots(step_minutes=15):
-    """Genera una lista di orari a intervalli di X minuti."""
-    slots = []
-    h, m = 0, 0
-    while h < 24:
-        slots.append(datetime.time(h, m))
-        m += step_minutes
-        if m >= 60:
-            h += 1
-            m = 0
-    return slots
-
-# Otteniamo tutti gli slot possibili (es. ogni 15 minuti)
-all_time_slots = generate_time_slots(15)
-
-# --- RIGA 2 MODIFICATA ---
-r2_col1, r2_col2, r2_col3 = st.columns([2, 1, 1])
-
-with r2_col1:
+    city_options = ["Scrivi manualmente..."] + available_cities
     selected_city_opt = st.selectbox(f"Città in {selected_nation}", city_options, index=1 if len(city_options) > 1 else 0)
     city_input = st.text_input("Inserisci città") if selected_city_opt == "Scrivi manualmente..." else selected_city_opt
     final_destination = f"{city_input}, {selected_nation}"
 
-with r2_col2: 
-    default_end_val = start_date + datetime.timedelta(days=3)
-    end_date = st.date_input("Giorno di Partenza", value=default_end_val, min_value=start_date)
+with col2:
+    st.subheader("✈️ Date e Orari")
+    c_date_in, c_time_in = st.columns(2)
+    with c_date_in: start_date = st.date_input("Giorno Arrivo", datetime.date.today())
+    with c_time_in: arrival_time = st.time_input("Ora Atterraggio", datetime.time(10, 00))
+    
+    st.write("")
+    c_date_out, c_time_out = st.columns(2)
+    with c_date_out: end_date = st.date_input("Giorno Partenza", datetime.date.today() + datetime.timedelta(days=3))
+    with c_time_out: departure_time = st.time_input("Ora Decollo", datetime.time(18, 00))
 
-with r2_col3: 
-    # LOGICA "SMART": FILTRO DEGLI ORARI
-    if end_date == start_date:
-        # Se si torna in giornata, filtra gli orari mostrando solo quelli DOPO l'arrivo
-        # Aggiungiamo un piccolo buffer (es. non puoi ripartire nello stesso minuto dell'arrivo)
-        valid_times = [t for t in all_time_slots if t > arrival_time]
-        
-        if not valid_times:
-            # Caso limite: Arrivo alle 23:45, non ci sono slot per il ritorno oggi
-            st.warning("Nessun orario disponibile oggi.")
-            departure_time = arrival_time # Fallback per evitare crash
-        else:
-            # Imposta un default sensato (es. 4 ore dopo l'arrivo, o l'ultimo disponibile)
-            default_idx = min(16, len(valid_times)-1) # Cerca di selezionare un orario 4 ore dopo (16 slot da 15min)
-            departure_time = st.selectbox(
-                "Orario di Decollo", 
-                options=valid_times, 
-                index=default_idx,
-                format_func=lambda t: t.strftime("%H:%M") # Mostra solo HH:MM
-            )
-    else:
-        # Se il giorno è diverso, mostra TUTTI gli orari
-        # Default alle 18:00 (cerchiamo l'indice corrispondente o usiamo un valore fisso)
-        default_time = datetime.time(18, 0)
-        try:
-            def_index = all_time_slots.index(default_time)
-        except ValueError:
-            def_index = len(all_time_slots) - 1 # Se non trova le 18:00, prende l'ultimo
-            
-        departure_time = st.selectbox(
-            "Orario di Decollo", 
-            options=all_time_slots, 
-            index=def_index,
-            format_func=lambda t: t.strftime("%H:%M")
-        )
-    # --- VALIDAZIONE TEMPORALE ---
-    # Uniamo data e ora per fare un confronto matematico preciso
-    dt_arrival = datetime.datetime.combine(start_date, arrival_time)
-    dt_departure = datetime.datetime.combine(end_date, departure_time)
+st.markdown("---")
 
-    # Calcoliamo la differenza
-    time_difference = dt_departure - dt_arrival
-    if time_difference.total_seconds() < 7200: # Opzionale: Avviso se il viaggio dura meno di 2 ore
-        st.info("ℹ️ Nota: La permanenza è molto breve (meno di 2 ore).")
-
-# --- PULSANTE CENTRATO ---
-c_left, c_center, c_right = st.columns([1, 2, 1])
-with c_center:
-    generate_click = st.button("Genera Itinerario", type="primary", width="stretch")
-
-if generate_click:
+if st.button("✨ Genera Itinerario Ottimizzato", type="primary", use_container_width=True):
     if not city_input:
         st.warning("Seleziona una città valida.")
     else:
@@ -460,7 +297,7 @@ if generate_click:
             st.success(f"Itinerario creato per {final_destination}!")
             st.markdown("---")
             
-            # Intestazione e PDF
+            # Intestazione e Download PDF
             h_col1, h_col2 = st.columns([3, 1])
             with h_col1:
                 st.header(trip_data.get("trip_title", ""))
@@ -468,26 +305,24 @@ if generate_click:
             with h_col2:
                 pdf_bytes = create_pdf(trip_data, final_destination)
                 st.download_button(
-                    label="📄 Scarica PDF con Mappe",
+                    label="📄 Scarica PDF",
                     data=pdf_bytes,
                     file_name=f"Itinerario_{city_input}.pdf",
                     mime="application/pdf",
-                    width="stretch"
+                    use_container_width=True
                 )
 
             # Loop Giorni
             for day in trip_data.get("days", []):
-                with st.expander(f"📅 Giorno {day['day_number']} - {day.get('date', '')}", expanded=True):
+                with st.expander(f"📅 Giorno {day['day_number']} - {day['date']}", expanded=True):
                     
                     col_list, col_map = st.columns([2, 1])
                     
                     # Colonna Sinistra: Lista Attività
                     with col_list:
-                        num_activities = len(day.get("activities", []))
                         for activity in day.get("activities", []):
-                            q_place = activity['place_name'].replace(" ", "+")
-                            q_city = city_input.replace(" ", "+")
-                            maps_url = f"https://www.google.com/maps/search/?api=1&query={q_place}+{q_city}"
+                            clean_place = activity['place_name'].replace(" ", "+")
+                            maps_url = f"https://www.google.com/maps/search/?api=1&query={clean_place}+{city_input}"
                             
                             st.markdown(f"""
                             <div class="activity-card">
@@ -497,8 +332,8 @@ if generate_click:
                                 </div>
                                 <div class="card-desc">{activity['description']}</div>
                                 <div class="card-meta">
-                                    <span>⏱️ {activity['duration']} | <i>{activity.get('tips', '')}</i></span>
-                                    <a href="{maps_url}" target="_blank" class="maps-link">📍 Apri Mappa</a>
+                                    <span>⏱️ {activity['duration']} | <i>{activity['tips']}</i></span>
+                                    <a href="{maps_url}" target="_blank" class="maps-link">📍 Maps</a>
                                 </div>
                             </div>
                             """, unsafe_allow_html=True)
@@ -513,11 +348,9 @@ if generate_click:
                         
                         if map_points:
                             df_map = pd.DataFrame(map_points)
-                            # Calcolo altezza dinamica (100px per card)
-                            dynamic_height = max(350, num_activities * 100)
-                            st.map(df_map, size=20, color='#8B4513', width="stretch", height=dynamic_height)
+                            st.map(df_map, size=20, color='#FFD700', use_container_width=True)
                         else:
                             st.info("Nessuna coordinata disponibile.")
 
 st.markdown("---")
-st.caption("Powered by Google Gemini 2.0 Flash")
+st.caption("Powered by Google Gemini 1.5 Flash & Streamlit")
