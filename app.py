@@ -41,7 +41,7 @@ def load_location_data():
 
 all_nations, map_name_code, db_cities = load_location_data()
 
-# --- 2. GESTIONE CSS (MODIFICATA PER OPACITÀ TOTALE) ---
+# --- 2. GESTIONE CSS ---
 def apply_custom_css(bg_file="david.jpg"):
     # Gestione Sfondo Immagine
     bg_css = ""
@@ -58,28 +58,21 @@ def apply_custom_css(bg_file="david.jpg"):
     st.markdown(f"""
     <style>
         {bg_css}
-        /* 1. NASCONDI HEADER STREAMLIT (Il "bordino" nero in alto) */
-        header {{
-            visibility: hidden;
-        }}
-        /* 2. RIDUCI SPAZIO VUOTO IN CIMA ALLA PAGINA */
-        .block-container {{
-            padding-top: 2rem !important; /* Riduci questo valore se vuoi il titolo ancora più in alto */
-            padding-bottom: 2rem !important;
-        }}
-        /* 1. INPUT COMPLETAMENTE OPACHI */
-        /* Impostiamo un colore solido (#262730) invece di variabili trasparenti */
+        header {{ visibility: hidden; }}
+        .block-container {{ padding-top: 2rem !important; padding-bottom: 2rem !important; }}
+        
+        /* INPUT COMPLETAMENTE OPACHI */
         .stTextInput > div > div, 
         .stSelectbox > div > div, 
         .stDateInput > div > div {{
-            background-color: #262730 !important; /* Colore solido (Background Secondario) */
+            background-color: #262730 !important;
             border: 1px solid #444 !important;
             border-radius: 8px !important;
             color: #fafafa !important;
-            opacity: 1 !important; /* Forza opacità 100% */
+            opacity: 1 !important;
         }}
         
-        /* 2. CALENDARIO: DATE DISABILITATE */
+        /* CALENDARIO: DATE DISABILITATE */
         div[data-baseweb="calendar"] div[aria-disabled="true"] {{
             cursor: not-allowed !important;
             opacity: 0.4 !important;
@@ -87,14 +80,14 @@ def apply_custom_css(bg_file="david.jpg"):
             color: #888 !important;
         }}
         
-        /* 3. CARD ATTIVITÀ COMPLETAMENTE OPACHE */
+        /* CARD ATTIVITÀ COMPLETAMENTE OPACHE */
         .activity-card {{
-            background-color: #262730; /* Colore solido, niente trasparenze */
+            background-color: #262730;
             padding: 15px; 
             border-radius: 10px;
             border-left: 5px solid var(--primary-color); 
             margin-bottom: 12px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.6); /* Ombra leggermente più forte per stacco */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.6);
         }}
         .card-title {{ color: var(--primary-color) !important; font-size: 1.15em; font-weight: bold; margin-bottom: 5px; }}
         .card-desc {{ color: #e0e0e0 !important; font-size: 0.95em; line-height: 1.4; }}
@@ -110,7 +103,6 @@ def apply_custom_css(bg_file="david.jpg"):
             font-family: monospace;
         }}
         
-        /* Link */
         a {{ color: var(--primary-color) !important; text-decoration: none; }}
         a:hover {{ text-decoration: underline; }}
     </style>
@@ -118,7 +110,7 @@ def apply_custom_css(bg_file="david.jpg"):
 
 apply_custom_css()
 
-# --- 3. FUNZIONE PDF ---
+# --- 3. FUNZIONE PDF (CORRETTA SOVRAPPOSIZIONE) ---
 def create_pdf(trip_data, destination):
     class PDF(FPDF):
         def header(self):
@@ -145,14 +137,26 @@ def create_pdf(trip_data, destination):
         pdf.ln(2)
         
         for act in day.get("activities", []):
-            pdf.set_font("Arial", 'B', 11)
-            time_str = f"{act['time']} ({act['duration']})"
-            pdf.cell(35, 8, time_str)
-            pdf.set_font("Arial", 'B', 11)
-            pdf.cell(0, 8, safe_txt(act['place_name']), 0, 1)
+            # 1. ORARIO (Colonna fissa piccola per l'ora esatta)
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(20, 8, act['time'], 0, 0) # Width 20 è sufficiente per "HH:MM"
+            
+            # 2. TITOLO (Resto della riga)
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(0, 8, safe_txt(act['place_name']), 0, 1) # '1' manda a capo
+            
+            # 3. DURATA E DESCRIZIONE (Riga sotto per evitare sovrapposizioni)
+            pdf.set_font("Arial", 'I', 10) # Corsivo per la durata
+            # Scrive la durata
+            pdf.cell(0, 5, f"Durata: {safe_txt(act['duration'])}", 0, 1)
+            
+            # Scrive la descrizione
             pdf.set_font("Arial", '', 10)
             pdf.multi_cell(0, 5, safe_txt(act['description']))
-            pdf.ln(3)
+            
+            # Spazio dopo l'attività
+            pdf.ln(4)
+            
         pdf.ln(5)
     return pdf.output(dest='S').encode('latin-1')
 
@@ -161,7 +165,7 @@ def get_itinerary(destination, start_date, arrival_time, end_date, departure_tim
     if not api_key:
         st.error("⚠️ Chiave API mancante.")
         return None
-
+    
     genai.configure(api_key=api_key)
     generation_config = {"temperature": 0.2, "response_mime_type": "application/json"}
     model = genai.GenerativeModel("gemini-2.5-flash-lite", generation_config=generation_config)
@@ -169,11 +173,20 @@ def get_itinerary(destination, start_date, arrival_time, end_date, departure_tim
     str_arr = arrival_time.strftime("%H:%M")
     str_dep = departure_time.strftime("%H:%M") if departure_time else "Non specificato"
 
+    # PROMPT
     prompt = f"""
     Agisci come guida turistica esperta. Crea itinerario culturale per {destination}.
     INPUT: ARRIVO {start_date} ore {str_arr}. PARTENZA {end_date} ore {str_dep}.
-    REGOLE: Focus musei/arte. Ottimizza per vicinanza. Rispetta orari. Coordinate precise.
-    JSON OUTPUT: {{ "trip_title": "...", "summary": "...", "days": [ {{ "day_number": 1, "date": "YYYY-MM-DD", "activities": [ {{ "time": "HH:MM", "place_name": "...", "description": "...", "duration": "...", "coordinates": {{ "lat": 0.0, "lon": 0.0 }}, "tips": "..." }} ] }} ] }}
+    REGOLE: 
+    1. Focus musei/arte. 
+    2. Ottimizza per vicinanza. 
+    3. Rispetta orari. 
+    4. Coordinate precise.
+    5. **IMPORTANTE**: Per ogni attività devi generare DUE campi distinti:
+       - "place_name": Il titolo descrittivo che apparirà all'utente (es. "Cena in un ristorante tipico", "Passeggiata al parco").
+       - "map_query": La stringa pulita per cercare su Google Maps. DEVE essere SOLO il nome del luogo o la categoria (es. "Ristorante tipico", "Parco centrale", "Bar"). NON deve contenere verbi o preposizioni come "Cena al", "Visita a".
+    
+    JSON OUTPUT: {{ "trip_title": "...", "summary": "...", "days": [ {{ "day_number": 1, "date": "YYYY-MM-DD", "activities": [ {{ "time": "HH:MM", "place_name": "...", "map_query": "...", "description": "...", "duration": "...", "coordinates": {{ "lat": 0.0, "lon": 0.0 }}, "tips": "..." }} ] }} ] }}
     """
 
     with st.spinner(f'Analisi destinazione {destination}...'):
@@ -206,16 +219,15 @@ with col2:
     time_labels = [t.strftime("%H:%M") for t in all_times]
 
     c1, c2 = st.columns(2)
-    with c1: start_date = st.date_input("Data Arrivo", datetime.date.today())
+    with c1: start_date = st.date_input("Data di Arrivo", datetime.date.today())
     with c2: 
-        arr_str = st.selectbox("Ora Arrivo", time_labels, index=20)
+        arr_str = st.selectbox("Orario di Arrivo", time_labels, index=20)
         h, m = map(int, arr_str.split(':'))
         arrival_time = datetime.time(h, m)
 
     c3, c4 = st.columns(2)
     with c3: 
-        # min_value abilita la logica di disattivazione date precedenti
-        end_date = st.date_input("Data Partenza", start_date, min_value=start_date)
+        end_date = st.date_input("Data di Partenza", start_date, min_value=start_date)
     
     with c4:
         is_same_day = (start_date == end_date)
@@ -225,7 +237,7 @@ with col2:
             final_times = [t.strftime("%H:%M") for t in valid] if valid else ["Nessun orario valido"]
         
         def_idx = len(final_times) - 4 if len(final_times) > 4 else 0
-        dep_str = st.selectbox("Ora Partenza", final_times, index=def_idx)
+        dep_str = st.selectbox("Orario di Partenza", final_times, index=def_idx)
         
         departure_time = None
         if dep_str != "Nessun orario valido":
@@ -270,7 +282,11 @@ if st.button("Genera Itinerario Ottimizzato", type="primary", use_container_widt
                         points = []
                         for act in day.get("activities", []):
                             if "coordinates" in act: points.append(act["coordinates"])
-                            link = f"https://www.google.com/maps/search/?api=1&query={act['place_name'].replace(' ', '+')}+{city_input}"
+                            
+                            # Logica Map Query
+                            query_term = act.get('map_query', act['place_name']) 
+                            link = f"https://www.google.com/maps/search/?api=1&query={query_term.replace(' ', '+')}+{city_input}"
+                            
                             st.markdown(f"""
                             <div class="activity-card">
                                 <div style="display:flex; justify-content:space-between;">
