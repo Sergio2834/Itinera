@@ -8,8 +8,8 @@ from fpdf import FPDF
 import base64
 
 # --- CONFIGURAZIONE ---
-api_key = "AIzaSyC8EK2UwcM-gVqfY0iJ3qANiYnfzVHRy9Y"
-st.set_page_config(page_title="Cultural Travel Planner", page_icon="🏛️", layout="wide")
+api_key = "AIzaSyA7VevYXb5ZXFXrmHIFnoVOPFNEfPHMGzc"
+st.set_page_config(page_title="Itinera", page_icon="🏛️", layout="wide")
 
 # --- 1. FUNZIONI DI UTILITÀ ---
 def generate_time_slots(step_minutes=30):
@@ -168,7 +168,7 @@ def get_itinerary(destination, start_date, arrival_time, end_date, departure_tim
     
     genai.configure(api_key=api_key)
     generation_config = {"temperature": 0.2, "response_mime_type": "application/json"}
-    model = genai.GenerativeModel("gemini-2.5-flash-lite", generation_config=generation_config)
+    model = genai.GenerativeModel("gemini-2.5-flash", generation_config=generation_config)
 
     str_arr = arrival_time.strftime("%H:%M")
     str_dep = departure_time.strftime("%H:%M") if departure_time else "Non specificato"
@@ -198,7 +198,7 @@ def get_itinerary(destination, start_date, arrival_time, end_date, departure_tim
             return None
 
 # --- UI PRINCIPALE ---
-st.title(" AI Cultural Travel Planner")
+st.title(" Itinera")
 
 col1, col2 = st.columns(2)
 
