@@ -12,18 +12,16 @@
 
 Segui questi passaggi per eseguire la Web App
 
-### 1. Clona il repository
+### 1. Crea un ambiente virtuale
+Utilizza nel tuo terminale il comando `python -m venv venv` (o `py -m venv venv`) per creare un ambiente virtuale.
 
-### 2. Crea un ambiente virtuale
-Utilizza il comando `python -m venv venv` (o `py -m venv venv`) per creare un ambiente virtuale.
-
-### 3. Attiva l'ambiente virtuale
+### 2. Attiva l'ambiente virtuale
 Se stai utilizzando **Windows** utilizza il comando `.\venv\Scripts\activate`; Se stai utilizzando **Mac/Linux** utilizza il comando `source venv/bin/activate`.
 
 ### 3. Installa le dipendenze
 Esegui il comando `pip install -r requirements.txt`
 
-## Utilizzo
+## 4. Utilizzo
 Dopo esserti posizionato nella cartella **Itinera-main** con il comando `cd Itinera-main`, per avviare l'applicazione esegui il comando: `streamlit run app.py`, l'app si aprirà automaticamente all'indirizzo http://localhost:8501.
 
 ## Struttura dell'applicazione
