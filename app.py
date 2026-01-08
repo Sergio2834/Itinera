@@ -110,7 +110,7 @@ def apply_custom_css(bg_file="david.jpg"):
 
 apply_custom_css()
 
-# --- 3. FUNZIONE PDF (CORRETTA SOVRAPPOSIZIONE) ---
+# --- 3. FUNZIONE PDF
 def create_pdf(trip_data, destination):
     class PDF(FPDF):
         def header(self):
@@ -137,24 +137,22 @@ def create_pdf(trip_data, destination):
         pdf.ln(2)
         
         for act in day.get("activities", []):
-            # 1. ORARIO (Colonna fissa piccola per l'ora esatta)
+            # 1. ORARIO
             pdf.set_font("Arial", 'B', 12)
-            pdf.cell(20, 8, act['time'], 0, 0) # Width 20 è sufficiente per "HH:MM"
+            pdf.cell(20, 8, act['time'], 0, 0)
             
-            # 2. TITOLO (Resto della riga)
+            # 2. TITOLO
             pdf.set_font("Arial", 'B', 12)
-            pdf.cell(0, 8, safe_txt(act['place_name']), 0, 1) # '1' manda a capo
+            pdf.cell(0, 8, safe_txt(act['place_name']), 0, 1) 
             
-            # 3. DURATA E DESCRIZIONE (Riga sotto per evitare sovrapposizioni)
-            pdf.set_font("Arial", 'I', 10) # Corsivo per la durata
+            # 3. DURATA E DESCRIZIONE 
+            pdf.set_font("Arial", 'I', 10) 
             # Scrive la durata
             pdf.cell(0, 5, f"Durata: {safe_txt(act['duration'])}", 0, 1)
             
             # Scrive la descrizione
             pdf.set_font("Arial", '', 10)
             pdf.multi_cell(0, 5, safe_txt(act['description']))
-            
-            # Spazio dopo l'attività
             pdf.ln(4)
             
         pdf.ln(5)
