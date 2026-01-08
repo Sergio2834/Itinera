@@ -15,7 +15,7 @@ Segui questi passaggi per eseguire la Web App
 ### 1. Clona il repository
 
 ### 2. Crea un ambiente virtuale
-Utilizza il comando python `-m venv venv (o py -m venv venv)` per creare un ambiente virtuale.
+Utilizza il comando `python -m venv venv` (o `py -m venv venv`) per creare un ambiente virtuale.
 
 ### 3. Attiva l'ambiente virtuale
 Se stai utilizzando **Windows** utilizza il comando `.\venv\Scripts\activate`; Se stai utilizzando **Mac/Linux** utilizza il comando `source venv/bin/activate`.
