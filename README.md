@@ -19,7 +19,7 @@ Utilizza nel tuo terminale il comando `python -m venv venv` (o `py -m venv venv`
 Se stai utilizzando **Windows** utilizza il comando `.\venv\Scripts\activate`; Se stai utilizzando **Mac/Linux** utilizza il comando `source venv/bin/activate`.
 
 ### 3. Installa le dipendenze
-Esegui il comando `pip install -r requirements.txt`
+Dopo esserti posizionato nella cartella **Itinera-main** con il comando `cd Itinera-main`, esegui il comando `pip install -r requirements.txt`.
 
 ## Utilizzo
 Dopo esserti posizionato nella cartella **Itinera-main** con il comando `cd Itinera-main`, per avviare l'applicazione esegui il comando: `streamlit run app.py`, l'app si aprirà automaticamente all'indirizzo http://localhost:8501.
