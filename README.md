@@ -21,7 +21,7 @@ Se stai utilizzando **Windows** utilizza il comando `.\venv\Scripts\activate`; S
 ### 3. Installa le dipendenze
 Esegui il comando `pip install -r requirements.txt`
 
-## 4. Utilizzo
+## Utilizzo
 Dopo esserti posizionato nella cartella **Itinera-main** con il comando `cd Itinera-main`, per avviare l'applicazione esegui il comando: `streamlit run app.py`, l'app si aprirà automaticamente all'indirizzo http://localhost:8501.
 
 ## Struttura dell'applicazione
