@@ -17,10 +17,10 @@ Segui questi passaggi per eseguire la Web App
 ### 3. Installa le dipendenze
 
 ## Utilizzo
-Per avviare l'applicazione esegui il comando: "streamlit run app.py", l'app si apriràautomaticamente all'indirizzo http://localhost:8501
+Per avviare l'applicazione esegui il comando: "streamlit run app.py", l'app si aprirà automaticamente all'indirizzo http://localhost:8501
 
 ## Struttura dell'applicazione
-**app.py** : file principale dell'applicazione
-**requirements.txt** : lista delle librerie necessarie
-**.streamlit/** : configurazione di Streamlit
+ * **app.py** : file principale dell'applicazione
+* **requirements.txt** : lista delle librerie necessarie
+* **.streamlit/** : configurazione di Streamlit
 
